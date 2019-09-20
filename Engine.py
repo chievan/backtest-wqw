@@ -132,3 +132,4 @@ class Backtester(object):
 if __name__ == '__main__':
     backtester = Backtester("000001.SZ", "20190101", "20190919")
     backtester.start_backtest()
+    backtester.rpnl.plot()
