@@ -9,6 +9,7 @@ class Backtester(object):
     """回测框架主程序"""
     def __init__(self, symbol, start_date, end_date, data_source="tushre"):
         self.target_symbol = symbol
+        self.option_symbol = None
         self.data_source  = data_source
         self.start_dt = start_date
         self.end_dt = end_date
@@ -35,7 +36,7 @@ class Backtester(object):
         :param timestamp: 交易时间
         :return:
         """
-        position =self.get_position(symbol)
+        position = self.get_position(symbol)
         position.event_fill(timestamp, is_buy, qty, price)
         self.strategy.event_position(self.positions)
         self.rpnl.loc[timestamp, "rpnl"] = position.realized_pnl
@@ -79,6 +80,8 @@ class Backtester(object):
         :return:
         """
         symbol = order.symbol
+        if symbol != "510050.SH":
+            self.option_symbol = symbol
         timestamp = prices.get_timestamp(symbol)
         if order.is_market_order and timestamp > order.timestamp:
             order.is_filled = True
@@ -102,7 +105,7 @@ class Backtester(object):
             close_price = prices.get_close_price(symbol)
             position.update_unrealized_pnl(close_price)
             self.upnl.loc[self.get_timestamp(), "upnl"] = position.unrealized_pnl
-            print(self.get_trade_date(),"净头寸:", position.net, "持仓市值:", position.position_value, "未实现盈亏:", position.unrealized_pnl, "实现盈亏:", position.realized_pnl)
+            print(self.get_trade_date(), position.symbol, "净头寸:", position.net, "持仓市值:", position.position_value, "未实现盈亏:", position.unrealized_pnl, "实现盈亏:", position.realized_pnl)
 
     def evthandler_tick(self, prices):
         """
@@ -114,6 +117,7 @@ class Backtester(object):
         self.strategy.event_tick(prices)
         self.match_order_book(prices)
         self.print_position_status(self.target_symbol, prices)
+        self.print_position_status(self.option_symbol, prices)
 
     def start_backtest(self):
         self.strategy = StandbyStrategy(self.target_symbol)
@@ -130,6 +134,6 @@ class Backtester(object):
 
 
 if __name__ == '__main__':
-    backtester = Backtester("510050.SH", "20190506", "20190919")
+    backtester = Backtester("510050.SH", "20190806", "20190920")
     backtester.start_backtest()
     backtester.rpnl.plot()

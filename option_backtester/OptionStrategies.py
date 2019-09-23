@@ -121,10 +121,10 @@ class StandbyStrategy(Strategy):
         if len(self.prices) < self.lookback_intervals:
             return
         timestamp = market_data.get_timestamp(self.symbol)
-        if timestamp == "20190506":
+        if timestamp == "20190806":
             self.on_buy_signal(timestamp, self.symbol, 10000)
             self.on_sell_signal(timestamp, self.option_symbol, 10000)
-        if timestamp == "20190919":
+        if timestamp == "20190918":
             self.on_sell_signal(timestamp, self.symbol, 10000)
             self.on_buy_signal(timestamp, self.option_symbol, 10000)
 
@@ -149,8 +149,8 @@ class StandbyStrategy(Strategy):
         :param qty:下单数量
         :return:
         """
-        if not self.is_long:
-            self.send_market_order(symbol, qty, True, timestamp)
+        # if not self.is_long:
+        self.send_market_order(symbol, qty, True, timestamp)
 
     def on_sell_signal(self, timestamp, symbol, qty):
         """
@@ -160,8 +160,8 @@ class StandbyStrategy(Strategy):
         :param qty:下单数量
         :return:
         """
-        if not self.is_short:
-            self.send_market_order(symbol, qty, False, timestamp)
+        # if not self.is_short:
+        self.send_market_order(symbol, qty, False, timestamp)
 
 
 if __name__ == '__main__':
