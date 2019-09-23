@@ -90,6 +90,14 @@ class MarketDataSource(object):
         self.start, self.end = None, None
         self.md = MarketData()
 
+    def data_read(self):
+        if self.source:
+            pro = ts.pro_api("3b1f5ca0766e5daa6fec01549bba207f8549ac82db7bbdb91599f499")
+            df = pro.daily(ts_code=self.ticker, start_date=self.start, end_date=self.end)
+            df = df.set_index("trade_date")
+            df = df.sort_index()
+        return df
+
     def start_market_simulation(self):
         """开始模拟市场行情"""
         data = self.data_read()
@@ -98,14 +106,6 @@ class MarketDataSource(object):
             self.md.add_open_price(time, self.ticker, row["open"])
             if not self.event_tick is None:  # 进行市场行情数据模拟
                 self.event_tick(self.md)
-
-    def data_read(self):
-        if self.source:
-            pro = ts.pro_api("3b1f5ca0766e5daa6fec01549bba207f8549ac82db7bbdb91599f499")
-            df = pro.daily(ts_code=self.ticker, start_date=self.start, end_date=self.end)
-            df = df.set_index("trade_date")
-            df = df.sort_index()
-        return df
 
 
 if __name__ == '__main__':
