@@ -88,17 +88,17 @@ class StandbyStrategy(Strategy):
         :param lookback_intervals:往前追溯数据长度
         """
         Strategy.__init__(self)
+        self.days = 0  # 记录运行天数
         self.symbol = symbol
         self.option_symbol = None
         self.lookback_intervals = lookback_intervals
         self.prices = pd.DataFrame()
-        self.option_prices = pd.DataFrame()
         self.is_long, self.is_short = False, False
         self.is_option_long, self.is_option_short = False, False
 
     def event_position(self, positions):
         """
-        持仓更新函数
+        持仓更新函数，用于限制持仓总头寸
         :param positions:持仓情况
         :return:
         """
@@ -117,29 +117,35 @@ class StandbyStrategy(Strategy):
         :param market_data:市场行情数据
         :return:
         """
+        self.days += 1  # 策略运行天数加一
         self.store_prices(market_data)
         if len(self.prices) < self.lookback_intervals:
             return
         timestamp = market_data.get_timestamp(self.symbol)
-        if timestamp == "20190806":
+        if self.days == 1:  # 策略开始第一天，买入50ETF，卖出当月认购合约
             self.on_buy_signal(timestamp, self.symbol, 10000)
             self.on_sell_signal(timestamp, self.option_symbol, 10000)
-        if timestamp == "20190918":
-            self.on_sell_signal(timestamp, self.symbol, 10000)
-            self.on_buy_signal(timestamp, self.option_symbol, 10000)
+        # 下面为移仓触发情况
+        self.move_contract()
+
+    def move_contract(self):
+        # 1、检测是否还是当月合约
+        # 2、如果不是则进行合约换仓
+
+
+        pass
 
     def store_prices(self, market_data):
         """
-        策略需要的数据进行存储
+        策略需要的数据进行存储，用于需要用到历史行情进行分析的策略
         :param market_data: 行情数据
         :return:
         """
         timestamp = market_data.get_timestamp(self.symbol)
         self.prices.loc[timestamp, "close"] = market_data.get_close_price(self.symbol)
         self.prices.loc[timestamp, "open"] = market_data.get_open_price(self.symbol)
-        self.option_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, True, 1)
-        self.option_prices.loc[timestamp, "close"] = market_data.get_close_price(self.option_symbol)
-        self.option_prices.loc[timestamp, "open"] = market_data.get_open_price(self.option_symbol)
+        # 获取我想要交易期权合约代码
+        self.option_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, False, 2)
 
     def on_buy_signal(self, timestamp, symbol, qty):
         """

@@ -9,7 +9,6 @@ class Backtester(object):
     """回测框架主程序"""
     def __init__(self, symbol, start_date, end_date, data_source="tushre"):
         self.target_symbol = symbol
-        self.option_symbol = None
         self.data_source  = data_source
         self.start_dt = start_date
         self.end_dt = end_date
@@ -80,10 +79,8 @@ class Backtester(object):
         :return:
         """
         symbol = order.symbol
-        if symbol != "510050.SH":
-            self.option_symbol = symbol
         timestamp = prices.get_timestamp(symbol)
-        if order.is_market_order and timestamp > order.timestamp:
+        if order.is_market_order and timestamp > order.timestamp:  # 保证第二天交易
             order.is_filled = True
             open_price = prices.get_open_price(symbol)
             order.filled_timestamp = timestamp
@@ -116,8 +113,8 @@ class Backtester(object):
         self.current_prices = prices
         self.strategy.event_tick(prices)
         self.match_order_book(prices)
-        self.print_position_status(self.target_symbol, prices)
-        self.print_position_status(self.option_symbol, prices)
+        for symbol in self.positions.keys():
+            self.print_position_status(symbol, prices)
 
     def start_backtest(self):
         self.strategy = StandbyStrategy(self.target_symbol)
@@ -134,6 +131,6 @@ class Backtester(object):
 
 
 if __name__ == '__main__':
-    backtester = Backtester("510050.SH", "20190806", "20190920")
+    backtester = Backtester("510050.SH", "20190801", "20190820")
     backtester.start_backtest()
     backtester.rpnl.plot()
