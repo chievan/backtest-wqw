@@ -93,6 +93,7 @@ class StandbyStrategy(Strategy):
         self.option_symbol = None
         self.lookback_intervals = lookback_intervals
         self.prices = pd.DataFrame()
+        self.positions = None
         self.is_long, self.is_short = False, False
         self.is_option_long, self.is_option_short = False, False
 
@@ -102,6 +103,7 @@ class StandbyStrategy(Strategy):
         :param positions:持仓情况
         :return:
         """
+        self.positions = positions
         if self.symbol in positions:
             position = positions[self.symbol]
             self.is_long = True if position.net > 0 else False
@@ -131,7 +133,7 @@ class StandbyStrategy(Strategy):
     def move_contract(self):
         # 1、检测是否还是当月合约
         # 2、如果不是则进行合约换仓
-
+        for symbol in self.positions.keys():
 
         pass
 
