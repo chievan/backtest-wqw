@@ -3,6 +3,7 @@ import pandas as pd
 from option_backtester.OptionData import *
 from option_backtester.OptionStrategies import *
 from option_backtester.OptionTrade import *
+from option_backtester.OptionReport import *
 
 
 class Backtester(object):
@@ -17,6 +18,8 @@ class Backtester(object):
         self.positions = dict()
         self.current_prices = None
         self.rpnl, self.upnl = pd.DataFrame(), pd.DataFrame()
+        self.report = Report(self.rpnl, self.upnl)
+        self.net_value = None
 
     def get_timestamp(self):
         return self.current_prices.get_timestamp(self.target_symbol)
@@ -38,7 +41,11 @@ class Backtester(object):
         position = self.get_position(symbol)
         position.event_fill(timestamp, is_buy, qty, price)
         self.strategy.event_position(self.positions)
-        self.rpnl.loc[timestamp, "rpnl"] = position.realized_pnl
+        # try:  # 根据交易更新已实现盈亏
+        #     self.rpnl.loc[timestamp, "rpnl"] = self.rpnl.loc[timestamp, "rpnl"] + position.realized_pnl
+        # except Exception:
+        #     self.rpnl.loc[timestamp, "rpnl"] = position.realized_pnl
+        self.rpnl.loc[timestamp, symbol] = position.realized_pnl
         print(self.get_trade_date(), "交易成功:", "Buy" if is_buy else "Sell", "数量:", qty, "标的:", symbol, "成交价:", price)
 
     def get_position(self, symbol):
@@ -101,8 +108,18 @@ class Backtester(object):
             position = self.positions[symbol]
             close_price = prices.get_close_price(symbol)
             position.update_unrealized_pnl(close_price)
-            self.upnl.loc[self.get_timestamp(), "upnl"] = position.unrealized_pnl
+            # self.upnl.loc[self.get_timestamp(), "upnl"] = position.unrealized_pnl
+            self.upnl.loc[self.get_timestamp(), symbol] = position.unrealized_pnl
             print(self.get_trade_date(), position.symbol, "净头寸:", position.net, "持仓市值:", position.position_value, "未实现盈亏:", position.unrealized_pnl, "实现盈亏:", position.realized_pnl)
+
+    def update_positions(self):
+        """更新最新的持仓状态，把持仓为零的合约删除记录"""
+        del_symbol_list = []
+        for symbol in self.positions.keys():
+            if self.positions[symbol].net == 0:
+                del_symbol_list.append(symbol)
+        for del_symbol in del_symbol_list:
+            del self.positions[del_symbol]
 
     def evthandler_tick(self, prices):
         """
@@ -111,8 +128,10 @@ class Backtester(object):
         :return:
         """
         self.current_prices = prices
-        self.strategy.event_tick(prices)
+        self.strategy.store_prices(prices)
         self.match_order_book(prices)
+        self.strategy.event_tick(prices)
+        self.update_positions()
         for symbol in self.positions.keys():
             self.print_position_status(symbol, prices)
 
@@ -128,9 +147,11 @@ class Backtester(object):
         print("回测开始")
         mds.start_market_simulation()
         print("回测完成")
+        print("进行策略分析")
+        self.net_value = self.report.analysis()
+        print("策略分析完毕")
 
 
 if __name__ == '__main__':
-    backtester = Backtester("510050.SH", "20190801", "20190820")
+    backtester = Backtester("510050.SH", "20190101", "20190924")
     backtester.start_backtest()
-    backtester.rpnl.plot()
