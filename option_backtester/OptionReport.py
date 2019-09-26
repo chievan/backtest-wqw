@@ -10,6 +10,7 @@ class Report(object):
         :param upnl: 未实现盈亏
         """
         self.rpnl, self.upnl = rpnl, upnl
+        self.prices = None
 
     def analysis(self):
         """

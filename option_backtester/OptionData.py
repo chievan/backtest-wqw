@@ -197,6 +197,12 @@ class MarketDataSource(object):
                 self.event_tick(self.md)
 
 
+class DataCatcher(object):
+    """用于存储所有行情用到的数据"""
+    def __init__(self):
+        pass
+
+
 if __name__ == '__main__':
     mds = MarketDataSource()
     mds.source = "tushare"

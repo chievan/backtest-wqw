@@ -148,6 +148,7 @@ class StandbyStrategy(Strategy):
         :return:
         """
         timestamp = market_data.get_timestamp(self.symbol)
+        # 存储50ETF历史行情数据
         self.prices.loc[timestamp, "close"] = market_data.get_close_price(self.symbol)
         self.prices.loc[timestamp, "open"] = market_data.get_open_price(self.symbol)
         # 获取我想要交易期权合约代码
