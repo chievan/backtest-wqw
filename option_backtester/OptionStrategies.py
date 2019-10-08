@@ -60,7 +60,7 @@ class Strategy(object):
         :param price: 50ETF价格
         :param month: 合约月份，0-近月，1-下月，2-近季，3-远季
         :param is_call: 涨跌
-        :param is_in_the_money: 实虚
+        :param is_in_the_money: 实虚用1或者-1表示
         :param gear: 挡位
         :return:
         """
@@ -76,7 +76,6 @@ class Strategy(object):
         else:
             strike_price = strike_prices[list(strike_prices).index(at_the_money) + is_in_the_money * gear]
         option_name = "华夏上证50ETF期权" + format(chose_month, '.0f') + ["认沽", "认购"][is_call] + format(strike_price, '.2f')
-        print(option_name)
         return self.option_info[self.option_info.name == option_name].ts_code.tolist()[0]
 
 
@@ -219,8 +218,8 @@ class NecklineStrategy(Strategy):
         timestamp = market_data.get_timestamp(self.symbol)
         if self.days == 1:  # 策略开始第一天，买入50ETF，卖出当月认购合约
             self.on_buy_signal(timestamp, self.symbol, 10000)
-            buy_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, False, False, 1)
-            sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, False, 2)
+            buy_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, False, -1, 1)
+            sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, -1, 2)
             self.on_buy_signal(timestamp, buy_symbol, 10000)
             self.on_sell_signal(timestamp, sell_symbol, 10000)
         else:
@@ -236,10 +235,16 @@ class NecklineStrategy(Strategy):
             if symbol != self.symbol:
                 delist_date = self.option_info[self.option_info.ts_code == symbol].delist_date.values[0]  # 计算持仓合约还有多久到期
                 if int(int(delist_date) - int(timestamp)) <= 2:
-                    self.on_buy_signal(timestamp, symbol, 10000)
-                    sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, True, False, 2)
-                    self.on_sell_signal(timestamp, sell_symbol, 10000)
-                    print(timestamp+"日期权合约从"+symbol+"换成"+sell_symbol)
+                    if self.positions[symbol].net < 0:
+                        self.on_buy_signal(timestamp, symbol, 10000)
+                        sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, True, -1, 2)
+                        self.on_sell_signal(timestamp, sell_symbol, 10000)
+                        print(timestamp+"日期权合约从"+symbol+"换成"+sell_symbol)
+                    else:
+                        self.on_sell_signal(timestamp, symbol, 10000)
+                        buy_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, False, -1, 1)
+                        self.on_buy_signal(timestamp, buy_symbol, 10000)
+                        print(timestamp+"日期权合约从"+symbol+"换成"+buy_symbol)
 
     def store_prices(self, market_data):
         """
@@ -274,6 +279,7 @@ class NecklineStrategy(Strategy):
         """
         # if not self.is_short:
         self.send_market_order(symbol, qty, False, timestamp)
+
 
 if __name__ == '__main__':
     strategy = StandbyStrategy('5100510.SH')

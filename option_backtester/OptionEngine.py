@@ -137,7 +137,7 @@ class Backtester(object):
 
     def start_backtest(self):
         self.strategy = NecklineStrategy(self.target_symbol)
-
+        # self.strategy = StandbyStrategy(self.target_symbol)
         self.strategy.event_sendorder = self.evthandler_order
 
         mds = MarketDataSource()
@@ -149,7 +149,7 @@ class Backtester(object):
         mds.start_market_simulation()
         print("回测完成")
         print("进行策略分析")
-        self.net_value = self.report.analysis()
+        self.net_value = self.report.analysis()  # 返回策略的浮动盈亏情况
         print("策略分析完毕")
 
 
