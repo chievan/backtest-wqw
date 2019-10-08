@@ -136,7 +136,8 @@ class Backtester(object):
             self.print_position_status(symbol, prices)
 
     def start_backtest(self):
-        self.strategy = StandbyStrategy(self.target_symbol)
+        self.strategy = NecklineStrategy(self.target_symbol)
+
         self.strategy.event_sendorder = self.evthandler_order
 
         mds = MarketDataSource()
@@ -153,5 +154,5 @@ class Backtester(object):
 
 
 if __name__ == '__main__':
-    backtester = Backtester("510050.SH", "20190101", "20190924")
+    backtester = Backtester("510050.SH", "20190601", "20190924")
     backtester.start_backtest()

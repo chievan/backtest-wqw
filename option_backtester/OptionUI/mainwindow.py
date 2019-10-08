@@ -159,10 +159,74 @@ class Demo4(QWidget):
         else:
             self.lineedit.setFont(combobox.currentFont())
 
+class Demo5(QWidget):
+    def __init__(self):
+        super(Demo5, self).__init__()
+        self.spinbox = QSpinBox(self)
+        self.spinbox.setRange(-99, 99)
+        self.spinbox.setSingleStep(1)
+        self.setVisible(66)
+        self.spinbox.valueChanged.connect(self.value_change_func)
+
+        self.double_spinbox = QDoubleSpinBox(self)
+        self.double_spinbox.setRange(-99.99, 99.99)
+        self.double_spinbox.setSingleStep(0.01)
+        self.double_spinbox.setValue(66.66)
+        self.double_spinbox.valueChanged.connect(self.value_change_func)
+
+        self.layout_init()
+
+    def layout_init(self):
+        self.all_h_layout = QHBoxLayout()
+        self.all_h_layout.addWidget(self.spinbox)
+        self.all_h_layout.addWidget(self.double_spinbox)
+
+        self.setLayout(self.all_h_layout)
+
+    def value_change_func(self):
+        decimal_part = self.double_spinbox.value() - int(self.double_spinbox.value())
+        self.double_spinbox.setValue(self.spinbox.value() + decimal_part)
+
+
+class Demo6(QWidget):
+    def __init__(self):
+        super(Demo6, self).__init__()
+        self.slider_1 = QSlider(Qt.Horizontal, self)
+        self.slider_1.setRange(0, 100)
+        self.slider_1.valueChanged.connect(lambda: self.on_change_func(self.slider_1))
+
+        self.slider_2 = QSlider(Qt.Vertical, self)
+        self.slider_2.setMinimum(0)
+        self.slider_2.setMaximum(100)
+        self.slider_2.valueChanged.connect(lambda: self.on_change_func(self.slider_2))
+
+        self.label = QLabel('0', self)
+        self.label.setFont(QFont('Arial Black', 20))
+
+        self.h_layout = QHBoxLayout()
+        self.v_layout = QVBoxLayout()
+
+        self.h_layout.addWidget(self.slider_2)
+        self.h_layout.addStretch(1)
+        self.h_layout.addWidget(self.label)
+        self.h_layout.addStretch(1)
+
+        self.v_layout.addWidget(self.slider_1)
+        self.v_layout.addLayout(self.h_layout)
+        self.setLayout(self.v_layout)
+
+    def on_change_func(self, slider):
+        if slider == self.slider_1:
+            self.slider_2.setValue(self.slider_1.value())
+            self.label.setText(str(self.slider_1.value()))
+        else:
+            self.slider_1.setValue(self.slider_2.value())
+            self.label.setText(str(self.slider_2.value()))
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    demo = Demo4()
+    demo = Demo6()
     demo.show()
     sys.exit(app.exec_())
 
