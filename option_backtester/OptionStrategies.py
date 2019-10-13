@@ -387,6 +387,8 @@ class BullSpreadStrategy(Strategy):
 
 
 if __name__ == '__main__':
+    """日常交割换合约导致移仓改成引擎自带"""
+    """策略移仓由策略自身发出信号"""
     strategy = StandbyStrategy('5100510.SH')
     print(strategy.match_contract('20190920', 2.879, 0, True, True, 1))
 

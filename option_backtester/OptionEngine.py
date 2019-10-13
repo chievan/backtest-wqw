@@ -136,8 +136,8 @@ class Backtester(object):
             self.print_position_status(symbol, prices)
 
     def start_backtest(self):
-        # self.strategy = NecklineStrategy(self.target_symbol)  # 领口策略
-        self.strategy = BullSpreadStrategy(self.target_symbol)  # 牛市价差
+        self.strategy = NecklineStrategy(self.target_symbol)  # 领口策略
+        # self.strategy = BullSpreadStrategy(self.target_symbol)  # 牛市价差
         # self.strategy = StandbyStrategy(self.target_symbol)  # 备兑策略
         self.strategy.event_sendorder = self.evthandler_order
 
@@ -153,7 +153,9 @@ class Backtester(object):
         self.net_value = self.report.analysis()  # 返回策略的浮动盈亏情况
         print("策略分析完毕")
 
-
+9
 if __name__ == '__main__':
-    backtester = Backtester("510050.SH", "20190601", "20190924")
+    """需要修改结算的过程，按照平均价结算"""
+    backtester = Backtester("510050.SH", "201509030", "20151231")
     backtester.start_backtest()
+    backtester.net_value.plot()

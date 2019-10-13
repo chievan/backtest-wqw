@@ -25,6 +25,8 @@ class Order(object):
 
 class Position(object):
     """账户证券持仓和现金变动情况"""
+    """1、需要增加资金管理模块"""
+    """2、需要增加希腊字母计算模块"""
     def __init__(self):
         """账户的基础要素"""
         self.symbol = None
