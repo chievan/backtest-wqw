@@ -121,6 +121,22 @@ class MarketData(object):
         """
         return self.__recent_ticks__[symbol].open_price
 
+    def get_pre_close_price(self, symbol):
+        """
+        获取数据容器中的前收盘价数据
+        :param symbol: 证券标识
+        :return:
+        """
+        return self.__recent_ticks__[symbol].pre_close
+
+    def get_pre_settle_price(self, symbol):
+        """
+        获取数据容器中的前结算价数据
+        :param symbol: 证券标识
+        :return:
+        """
+        return self.__recent_ticks__[symbol].pre_settle
+
     def get_timestamp(self, symbol):
         """
         获取数据容器中的时间戳

@@ -50,7 +50,7 @@ class Strategy(object):
     @staticmethod
     def option_information():
         pro = ts.pro_api("3b1f5ca0766e5daa6fec01549bba207f8549ac82db7bbdb91599f499")
-        df = pro.opt_basic(exchange='SSE', fields='ts_code,name,exercise_type,list_date,delist_date')
+        df = pro.opt_basic(exchange='SSE', fields='ts_code,name,exercise_type,list_date,delist_date,exercise_price')
         return df
 
     def match_contract(self, time, price, month, is_call, is_in_the_money, gear):
