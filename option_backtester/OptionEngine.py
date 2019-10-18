@@ -154,7 +154,7 @@ class Backtester(object):
         self.net_value = self.report.analysis()  # 返回策略的浮动盈亏情况
         print("策略分析完毕")
 
-9
+
 if __name__ == '__main__':
     """需要修改结算的过程，按照平均价结算"""
     backtester = Backtester("510050.SH", "20150930", "20151231")
