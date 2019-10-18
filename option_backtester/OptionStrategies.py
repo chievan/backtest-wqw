@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import tushare as ts
 from option_backtester.OptionTrade import *
+from option_backtester.OptionAccount import *
 
 
 class Strategy(object):
@@ -50,7 +51,7 @@ class Strategy(object):
     @staticmethod
     def option_information():
         pro = ts.pro_api("3b1f5ca0766e5daa6fec01549bba207f8549ac82db7bbdb91599f499")
-        df = pro.opt_basic(exchange='SSE', fields='ts_code,name,exercise_type,list_date,delist_date,exercise_price')
+        df = pro.opt_basic(exchange='SSE', fields='ts_code,name,call_put,list_date,delist_date,exercise_price')
         return df
 
     def match_contract(self, time, price, month, is_call, is_in_the_money, gear):
@@ -81,7 +82,7 @@ class Strategy(object):
 
 class StandbyStrategy(Strategy):
     """备兑策略"""
-    def __init__(self, symbol, lookback_intervals=1):
+    def __init__(self, symbol, start_dt, lookback_intervals=1):
         """
         策略基础参数设定
         :param symbol: 证券标识
@@ -95,6 +96,8 @@ class StandbyStrategy(Strategy):
         self.positions = None
         self.is_long, self.is_short = False, False
         self.is_option_long, self.is_option_short = False, False
+        self.start_dt = start_dt
+        self.account = Account()
 
     def event_position(self, positions):
         """
@@ -119,13 +122,30 @@ class StandbyStrategy(Strategy):
         if len(self.prices) < self.lookback_intervals:
             return
         timestamp = market_data.get_timestamp(self.symbol)
-        if self.days == 1:  # 策略开始第一天，买入50ETF，卖出当月认购合约
-            self.on_buy_signal(timestamp, self.symbol, 10000)
-            sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, False, 2)
-            self.on_sell_signal(timestamp, sell_symbol, 10000)
+        # 上证50ETF除权除息日
+        dividend_date = ['20161129', '20171128', '20181203']  # 分红除权除息日
+        before_dividend_remove = ['20161123', '20171122', '20181128']  # 分红前面的合约到期日
+        before_dividend_date = ['20161121', '20171120', '20181126']  # 分红前面合约到期日的前两日
+        if self.days == 1 or timestamp in dividend_date:  # 策略开始第一天，买入50ETF，卖出当月认购合约
+            self.open_position(timestamp)
         else:
-            # 下面为移仓触发情况
-            self.move_contract(timestamp)
+            if timestamp in before_dividend_date:  # 分红前平仓
+                self.close_position(timestamp)
+            else:
+                # 下面为移仓触发情况
+                self.move_contract(timestamp)
+
+    def close_position(self, timestamp):
+        for symbol in self.positions.keys():
+            if symbol == self.symbol:
+                self.on_sell_signal(timestamp, symbol, 10000)
+            else:
+                self.on_buy_signal(timestamp, symbol, 10000)
+
+    def open_position(self, timestamp):
+        self.on_buy_signal(timestamp, self.symbol, 10000)
+        sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, False, 2)
+        self.on_sell_signal(timestamp, sell_symbol, 10000)
 
     def move_contract(self, timestamp):
         if not self.positions:

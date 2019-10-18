@@ -20,10 +20,15 @@ class Report(object):
         print(self.rpnl.head())
         print(self.upnl.head())
         # 根据两张盈亏表格合成总持仓盈亏表
-        net_value = pd.DataFrame(index = self.upnl.index,columns = self.upnl.columns)
-        for symbol in self.rpnl.columns:
-            net_value[symbol] = self.rpnl[symbol]
-        net_value = net_value.fillna(method = "ffill")
+        net_value = pd.DataFrame(index=sorted(list(set(self.upnl.index.tolist() + self.rpnl.index.tolist()))),
+                                 columns=self.upnl.columns)
+        df_rpnl = self.rpnl.cumsum()  # 多次交易的结果求和
+        for symbol in df_rpnl.columns:
+            net_value[symbol] = df_rpnl[symbol]
+        net_value = net_value.fillna(method="ffill")
         net_value = net_value.fillna(0)
-        net_value = net_value + self.upnl.fillna(0)
+        df_upnl = pd.DataFrame(index=net_value.index,columns=self.upnl.columns)
+        for symbol in df_upnl.columns:
+            df_upnl[symbol] = self.upnl[symbol]
+        net_value = net_value + df_upnl.fillna(0)
         return net_value.sum(axis=1)

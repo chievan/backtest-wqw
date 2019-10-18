@@ -92,6 +92,7 @@ class Backtester(object):
             open_price = prices.get_open_price(symbol)
             order.filled_timestamp = timestamp
             order.filled_prices = open_price
+            # self.strategy.account.fill_margin(self.target_symbol, order, prices, self.positions, self.strategy.option_info) ###新增
             self.update_filled_position(symbol, order.qty, order.is_buy, open_price, timestamp)
             self.strategy.event_order(order)
             return False
@@ -136,9 +137,9 @@ class Backtester(object):
             self.print_position_status(symbol, prices)
 
     def start_backtest(self):
-        self.strategy = NecklineStrategy(self.target_symbol)  # 领口策略
-        # self.strategy = BullSpreadStrategy(self.target_symbol)  # 牛市价差
-        # self.strategy = StandbyStrategy(self.target_symbol)  # 备兑策略
+        # self.strategy = NecklineStrategy(self.target_symbol, self.start_dt)  # 领口策略
+        # self.strategy = BullSpreadStrategy(self.target_symbol, self.start_dt)  # 牛市价差
+        self.strategy = StandbyStrategy(self.target_symbol, self.start_dt)  # 备兑策略
         self.strategy.event_sendorder = self.evthandler_order
 
         mds = MarketDataSource()
@@ -156,6 +157,6 @@ class Backtester(object):
 9
 if __name__ == '__main__':
     """需要修改结算的过程，按照平均价结算"""
-    backtester = Backtester("510050.SH", "201509030", "20151231")
+    backtester = Backtester("510050.SH", "20150930", "20151231")
     backtester.start_backtest()
     backtester.net_value.plot()
