@@ -137,9 +137,10 @@ class Backtester(object):
             self.print_position_status(symbol, prices)
 
     def start_backtest(self):
-        # self.strategy = NecklineStrategy(self.target_symbol, self.start_dt)  # 领口策略
+        # self.strategy = NecklineStrategy(self.target_symbol)  # 领口策略
         # self.strategy = BullSpreadStrategy(self.target_symbol, self.start_dt)  # 牛市价差
-        self.strategy = StandbyStrategy(self.target_symbol, self.start_dt)  # 备兑策略
+        # self.strategy = StandbyStrategy(self.target_symbol, self.start_dt)  # 备兑策略
+        self.strategy = LongCall(self.target_symbol, self.start_dt)  # 备兑策略
         self.strategy.event_sendorder = self.evthandler_order
 
         mds = MarketDataSource()
@@ -157,6 +158,21 @@ class Backtester(object):
 
 if __name__ == '__main__':
     """需要修改结算的过程，按照平均价结算"""
-    backtester = Backtester("510050.SH", "20150930", "20151231")
+    backtester = Backtester("510050.SH", "20190101", "20191021")
     backtester.start_backtest()
     backtester.net_value.plot()
+
+    # import DataAPI
+    # all_data = pd.DataFrame()
+    # # 获取50ETF行情
+    # df1 = DataAPI.MktFunddGet(secID=u"",ticker=u"510050",tradeDate=u"",beginDate=u"20190101", endDate=u"20191021",field=["tradeDate","closePrice"],pandas="1")
+    # df1 = df1.set_index("tradeDate")
+    # date_list = df1.index.tolist()
+    # for date in date_list:
+    #     df = DataAPI.MktOptdGet(secID=u"", optID=u"", ticker=u"", tradeDate=date, beginDate=u"", endDate=u"",
+    #                             field=["secID","tradeDate", "turnoverVol", "openInt"], pandas="1")
+    #     df2 = df.sum(axis=0)
+    #     print(date)
+    #     df1.loc[date, '成交量'] = df2.turnoverVol
+    #     df1.loc[date, '持仓量'] = df2.openInt
+    #     df1.to_excel(r'E:\\公众号运营\\20191014期权温和看涨策略表现\\hold_trade.xlsx')
