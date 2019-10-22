@@ -144,7 +144,7 @@ class StandbyStrategy(Strategy):
 
     def open_position(self, timestamp):
         self.on_buy_signal(timestamp, self.symbol, 10000)
-        sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, False, 2)
+        sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, -1,0)
         self.on_sell_signal(timestamp, sell_symbol, 10000)
 
     def move_contract(self, timestamp):
@@ -157,7 +157,124 @@ class StandbyStrategy(Strategy):
                 delist_date = self.option_info[self.option_info.ts_code == symbol].delist_date.values[0]  # 计算持仓合约还有多久到期
                 if int(int(delist_date) - int(timestamp)) <= 2:
                     self.on_buy_signal(timestamp, symbol, 10000)
-                    sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, True, False, 2)
+                    sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, True, -1, 0)
+                    self.on_sell_signal(timestamp, sell_symbol, 10000)
+                    print(timestamp+"日期权合约从"+symbol+"换成"+sell_symbol)
+
+    def store_prices(self, market_data):
+        """
+        策略需要的数据进行存储，用于需要用到历史行情进行分析的策略
+        :param market_data: 行情数据
+        :return:
+        """
+        timestamp = market_data.get_timestamp(self.symbol)
+        # 存储50ETF历史行情数据
+        self.prices.loc[timestamp, "close"] = market_data.get_close_price(self.symbol)
+        self.prices.loc[timestamp, "open"] = market_data.get_open_price(self.symbol)
+        # 获取我想要交易期权合约代码
+
+    def on_buy_signal(self, timestamp, symbol, qty):
+        """
+        买-下单函数
+        :param timestamp:时间戳
+        :param symbol:证券标识
+        :param qty:下单数量
+        :return:
+        """
+        # if not self.is_long:
+        self.send_market_order(symbol, qty, True, timestamp)
+
+    def on_sell_signal(self, timestamp, symbol, qty):
+        """
+        卖-下单函数
+        :param timestamp:时间戳
+        :param symbol:证券标识
+        :param qty:下单数量
+        :return:
+        """
+        # if not self.is_short:
+        self.send_market_order(symbol, qty, False, timestamp)
+
+
+class ShortPut(Strategy):
+    """买入看涨"""
+    def __init__(self, symbol, start_dt, lookback_intervals=1):
+        """
+        策略基础参数设定
+        :param symbol: 证券标识
+        :param lookback_intervals:往前追溯数据长度
+        """
+        Strategy.__init__(self)
+        self.days = 0  # 记录运行天数
+        self.symbol = symbol
+        self.lookback_intervals = lookback_intervals
+        self.prices = pd.DataFrame()
+        self.positions = None
+        self.is_long, self.is_short = False, False
+        self.is_option_long, self.is_option_short = False, False
+        self.start_dt = start_dt
+        self.account = Account()
+
+    def event_position(self, positions):
+        """
+        持仓更新函数，用于限制持仓总头寸
+        :param positions:持仓情况
+        :return:
+        """
+        self.positions = positions
+        if self.symbol in positions:
+            position = positions[self.symbol]
+            self.is_long = True if position.net > 0 else False
+            self.is_short = True if position.net < 0 else False
+
+    def event_tick(self, market_data):
+        """
+        模拟市场行情，行情数据作为数据输入
+        :param market_data:市场行情数据
+        :return:
+        """
+        self.days += 1  # 策略运行天数加一
+        # self.store_prices(market_data)
+        if len(self.prices) < self.lookback_intervals:
+            return
+        timestamp = market_data.get_timestamp(self.symbol)
+        # 上证50ETF除权除息日
+        dividend_date = ['20161129', '20171128', '20181203']  # 分红除权除息日
+        before_dividend_remove = ['20161123', '20171122', '20181128']  # 分红前面的合约到期日
+        before_dividend_date = ['20161121', '20171120', '20181126']  # 分红前面合约到期日的前两日
+        if self.days == 1 or timestamp in dividend_date:  # 策略开始第一天，买入50ETF，卖出当月认购合约
+            self.open_position(timestamp)
+        else:
+            if timestamp in before_dividend_date:  # 分红前平仓
+                self.close_position(timestamp)
+            else:
+                # 下面为移仓触发情况
+                self.move_contract(timestamp)
+
+    def close_position(self, timestamp):
+        for symbol in self.positions.keys():
+            if symbol == self.symbol:
+                pass
+                # self.on_sell_signal(timestamp, symbol, 10000)
+            else:
+                self.on_buy_signal(timestamp, symbol, 10000)
+
+    def open_position(self, timestamp):
+        # self.on_buy_signal(timestamp, self.symbol, 10000)
+        sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, False, -1, 2)
+        self.on_sell_signal(timestamp, sell_symbol, 10000)
+
+    def move_contract(self, timestamp):
+        if not self.positions:
+            return
+        for symbol in self.positions.keys():
+            if self.positions[symbol].net == 0:
+                continue
+            if symbol != self.symbol:
+                delist_date = self.option_info[self.option_info.ts_code == symbol].delist_date.values[0]  # 计算持仓合约还有多久到期
+                if int(int(delist_date) - int(timestamp)) <= 2:
+                    self.on_buy_signal(timestamp, symbol, 10000)
+                    sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, False, -1, 2)
                     self.on_sell_signal(timestamp, sell_symbol, 10000)
                     print(timestamp+"日期权合约从"+symbol+"换成"+sell_symbol)
 
@@ -261,8 +378,8 @@ class LongCall(Strategy):
 
     def open_position(self, timestamp):
         # self.on_buy_signal(timestamp, self.symbol, 10000)
-        sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, False, 2)
-        self.on_sell_signal(timestamp, sell_symbol, 10000)
+        buy_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 0, True, -1, 2)
+        self.on_buy_signal(timestamp, buy_symbol, 10000)
 
     def move_contract(self, timestamp):
         if not self.positions:
@@ -273,10 +390,10 @@ class LongCall(Strategy):
             if symbol != self.symbol:
                 delist_date = self.option_info[self.option_info.ts_code == symbol].delist_date.values[0]  # 计算持仓合约还有多久到期
                 if int(int(delist_date) - int(timestamp)) <= 2:
-                    self.on_buy_signal(timestamp, symbol, 10000)
-                    sell_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, True, False, 2)
-                    self.on_sell_signal(timestamp, sell_symbol, 10000)
-                    print(timestamp+"日期权合约从"+symbol+"换成"+sell_symbol)
+                    self.on_sell_signal(timestamp, symbol, 10000)
+                    buy_symbol = self.match_contract(timestamp, self.prices.loc[timestamp, "close"], 1, True, -1, 2)
+                    self.on_buy_signal(timestamp, buy_symbol, 10000)
+                    print(timestamp+"日期权合约从"+symbol+"换成"+buy_symbol)
 
     def store_prices(self, market_data):
         """

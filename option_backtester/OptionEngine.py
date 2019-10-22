@@ -140,7 +140,7 @@ class Backtester(object):
         # self.strategy = NecklineStrategy(self.target_symbol)  # 领口策略
         self.strategy = BullSpreadStrategy(self.target_symbol)  # 牛市价差
         # self.strategy = StandbyStrategy(self.target_symbol, self.start_dt)  # 备兑策略
-        # self.strategy = LongCall(self.target_symbol, self.start_dt)  # 买入看涨策略
+        # self.strategy =LongCall(self.target_symbol, self.start_dt)  # 买入看涨策略
         self.strategy.event_sendorder = self.evthandler_order
 
         mds = MarketDataSource()
@@ -157,10 +157,12 @@ class Backtester(object):
 
 
 if __name__ == '__main__':
+    from option_backtester.OptionStrategies import *
     """需要修改结算的过程，按照平均价结算"""
     backtester = Backtester("510050.SH", "20190101", "20191021")
     backtester.start_backtest()
-    backtester.net_value.plot()
+    backtester.net_value.to_excel(r'E:\\公众号运营\\20191014期权温和看涨策略表现\\牛市价差(买平值当月认购+卖虚2档同月认购).xlsx')
+    backtester.net_value.sum(axis=1).plot()
 
     # import DataAPI
     # all_data = pd.DataFrame()
