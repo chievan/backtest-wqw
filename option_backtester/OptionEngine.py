@@ -138,9 +138,9 @@ class Backtester(object):
 
     def start_backtest(self):
         # self.strategy = NecklineStrategy(self.target_symbol)  # 领口策略
-        # self.strategy = BullSpreadStrategy(self.target_symbol, self.start_dt)  # 牛市价差
+        self.strategy = BullSpreadStrategy(self.target_symbol)  # 牛市价差
         # self.strategy = StandbyStrategy(self.target_symbol, self.start_dt)  # 备兑策略
-        self.strategy = LongCall(self.target_symbol, self.start_dt)  # 备兑策略
+        # self.strategy = LongCall(self.target_symbol, self.start_dt)  # 买入看涨策略
         self.strategy.event_sendorder = self.evthandler_order
 
         mds = MarketDataSource()

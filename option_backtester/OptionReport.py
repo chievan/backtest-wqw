@@ -31,4 +31,4 @@ class Report(object):
         for symbol in df_upnl.columns:
             df_upnl[symbol] = self.upnl[symbol]
         net_value = net_value + df_upnl.fillna(0)
-        return net_value.sum(axis=1)
+        return net_value  # net_value.sum(axis=1)
